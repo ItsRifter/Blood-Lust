@@ -1,0 +1,5 @@
+"UnlitGeneric"
+{
+	"$basetexture" "bloodlust/hud/humanblood"
+	"$translucent" 1
+}

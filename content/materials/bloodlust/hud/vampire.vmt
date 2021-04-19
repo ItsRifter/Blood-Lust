@@ -1,0 +1,7 @@
+"UnlitGeneric"
+{
+	"$basetexture" "bloodlust/hud/vampire"
+	"$translucent" 1
+	"$ignorez" 0
+	"$decal" 1
+}
