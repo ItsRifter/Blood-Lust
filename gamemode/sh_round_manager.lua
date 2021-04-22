@@ -6,7 +6,7 @@ GM.GameTime = 0
 GM.GameCount = -1
 GM.GameState = GM.GameState or GAME_PREROUND
 GM.GameIdle = true
-
+GM.ActivePlayers = {}
 if SERVER then
 
 	function GM:GetRoundStatus()
@@ -26,7 +26,7 @@ if SERVER then
 			end
 		elseif self.GameState == GAME_PREROUND then
 			-- Check for any active players
-			if #player.GetAll() >= 3 and self.GameIdle then
+			if #player.GetAll() >= 2 and self.GameIdle then
 				self.GameIdle = false
 				self:BroadcastMessage(Color(255, 255, 255), "Enough players connected, Starting game...")
 				timer.Simple(5, function()
@@ -41,25 +41,24 @@ if SERVER then
 		game.CleanUpMap()
 		
 		--Reset the table and insert active players into the table
-		if activePlayers then
-			table.Empty(activePlayers)
+		if GAMEMODE.ActivePlayers then
+			table.Empty(GAMEMODE.ActivePlayers)
 			for k, pl in pairs(player.GetAll()) do
-				table.insert(activePlayers, pl)
+				table.insert(GAMEMODE.ActivePlayers, pl)
 			end
+		else
+			GAMEMODE.ActivePlayers = {}
 		end
 		
 		--Set teams and respawn the player
 		for _, pl in pairs(player.GetAll()) do
-			if pl:Team() == TEAM_VAMPIRE then
-				pl:SetTeam(TEAM_HUMAN)
-			else
-				pl:SetTeam(TEAM_HUMAN)
-			end
+			pl:SetTeam(TEAM_HUMAN)
+			pl:UnSpectate()
 			pl:Spawn()
 		end
 		
 		--If there are more than 2 humans, 
-		if #player.GetAll() >= 3 then
+		if #player.GetAll() >= 2 then
 			timer.Simple(0.1, function()
 				self.GameState = GAME_ACTIVE
 				self.GameCount = self.GameCount + 1
@@ -67,22 +66,20 @@ if SERVER then
 			end)
 			self:RoundTime(self.ConVars.TimeLimit:GetInt())
 			
-			--local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
-			local vampire = team.GetPlayers(TEAM_HUMAN)[3]
+			local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
 			vampire:SetTeam(TEAM_VAMPIRE)
 			vampire:Spawn()
 			timer.Simple(0.1, function()
-				vampire:Give("weapon_crowbar")
+				vampire:Give("weapon_bl_fangs")
 			end)
 			
-			if #player.GetAll() >= GAMEMODE.ConVars.MinHunters:GetInt() then
-				local hunter = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
-				hunter:SetTeam(TEAM_HUNTER)
-				hunter:Spawn()
-				timer.Simple(0.1, function()
-					hunter:Give("weapon_crossbow")
-				end)
-			end
+			local hunter = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+			hunter:SetTeam(TEAM_HUNTER)
+			hunter:Spawn()
+			timer.Simple(0.1, function()
+				hunter:Give("weapon_crossbow")
+				hunter:Give("weapon_bl_stake")
+			end)
 		else
 			self.GameState = GAME_PREROUND
 			self.GameIdle = true
@@ -113,11 +110,11 @@ if SERVER then
 		if state == GAME_HUMANWIN then
 			print("HUMANS WIN")
 			self:BroadcastMessage(Color(255, 210, 150), "Humans have survived the night!")
-			self:BroadcastSound("bloodlust/endround.wav")
+			self:BroadcastSound("bloodlust/humanwin.wav")
 		elseif state == GAME_VAMPIREWIN then
 			print("VAMPIRES WIN")
 			self:BroadcastMessage(Color(165, 5, 5), "Vampires have conquered the humans!")
-			self:BroadcastSound("bloodlust/endround.wav")
+			self:BroadcastSound("bloodlust/vampirewin.wav")
 		else
 			--Other states if main states are not met
 			if state == GAME_RESTART then
@@ -128,7 +125,7 @@ if SERVER then
 			end
 		end
 		
-		timer.Simple(10, function()
+		timer.Simple(7, function()
 			self:RoundRestart()
 		end)
 	end

@@ -11,6 +11,7 @@ util.AddNetworkString("bl_messagesay")
 util.AddNetworkString("bl_playsound")
 util.AddNetworkString("bl_roundstart")
 util.AddNetworkString("bl_playerdeath")
+util.AddNetworkString("bl_clientragdoll")
 
 function GM:BroadcastMessage(...)
 	net.Start("bl_messagesay")

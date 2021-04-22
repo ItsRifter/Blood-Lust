@@ -1,0 +1,9 @@
+"vertexlitgeneric"
+{
+	"$basetexture" "models/bloodlust/stake/weapon_stake"
+	"$bumpmap" "models/bloodlust/stake/weapon_stake_normal"
+	"$phong" "1"
+	"$phongexponent" "15"
+	"$phongboost"	"1"
+	"$phongfresnelranges"	"[.1 0.4 2]"
+}

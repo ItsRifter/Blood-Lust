@@ -7,7 +7,7 @@ end
 function GM:PlayerSpawn(ply)
 	ply:StripWeapons()
 	ply:RemoveAllAmmo()
-	
+	ply:SprintDisable()
 	if self.GameState == GAME_PREROUND or self.GameState == GAME_POSTROUND then
 		if math.random(0, 1) == 0 then
 			ply:SetModel("models/player/group01/female_0" .. math.random(6) .. ".mdl")
@@ -22,9 +22,10 @@ function GM:PlayerSpawn(ply)
 		ply:AllowFlashlight(false)
 	else
 		ply:UnSpectate()
+		ply:AllowFlashlight(true)
 	end
 	
-	ply:Give("bl_hands")
+	ply:Give("weapon_bl_hands")
 	
 	self:RoundCheck()
 end
@@ -35,83 +36,130 @@ end
 
 function GM:PlayerDisconnected(ply)
 	ply:SetTeam(0)
-	if (ply:Team() == TEAM_VAMPIRE and team.NumPlayers(TEAM_VAMPIRE) < 1) or (ply:Team() == TEAM_GHOUL and team.NumPlayers(TEAM_GHOUL) < 1) then
-		self:BroadcastMessage(Color(255, 210, 150), "The vampires fled")
-		self:EndRound(GAME_ABORT)
-	end
 	table.RemoveByValue(activePlayers, ply)
-	self:RoundCheck()
-end
-
-function GM:DoPlayerDeath(ply, att, dmgInfo)
-	if att:IsPlayer() then
-		net.Start("bl_playerdeath")
-			net.WriteString(att:Nick())
-			net.WriteInt(att:Team(), 4)
-			net.WriteInt(ply:Team(), 4)
-		net.Send(ply)
-	else
-		net.Start("bl_playerdeath")
-			net.WriteString("Suicide")
-			net.WriteInt(5, 4)
-			net.WriteInt(ply:Team(), 4)
-		net.Send(ply)
+	if team.NumPlayers(TEAM_VAMPIRE) < 1 and team.NumPlayers(TEAM_GHOUL) < 1 then
+		self:BroadcastMessage(Color(255, 210, 150), "The vampires fled")
+		self:RoundEnd(GAME_ABORT)
 	end
-	ply:CreateRagdoll()
 	
-	if ply:Team() == TEAM_VAMPIRE and att and att:IsPlayer() and att:GetActiveWeapon():GetClass() == "weapon_crossbow" then
-		ply:SetTeam(TEAM_SPECTATOR)
-		ply:GetRagdollEntity():Ignite(6, 0)
-	elseif ply:Team() == TEAM_VAMPIRE then
-		local resurrectPos = ply:GetPos()
-		timer.Create("bl_resurrect", 8, 1, function()
-			ply:Spawn()
-			ply:SetPos(resurrectPos)
-		end)
-	elseif ply:Team() == TEAM_HUMAN and (att and att:IsPlayer() and att:Team() == TEAM_VAMPIRE) then
-		ply:Lock()
-		local resurrectPos = ply:GetPos()
-		for _, wep in pairs(ply:GetWeapons()) do
-			if wep:GetClass() == "bl_hands" then break end
-			ply:DropWeapon(wep)
-		end
-		ply:SetTeam(TEAM_GHOUL)
-		timer.Simple(11, function()
-			
-			ply:ChatPrint("You are now a ghoul")
-			ply:Spawn()
-			ply:SetPos(resurrectPos)
-			ply:UnLock()
-			ply:Give("weapon_crowbar")
-		end)
-	elseif ply:Team() == TEAM_HUMAN and (att:IsPlayer() and att:Team() == TEAM_HUNTER) then
-		for _, wep in pairs(att:GetWeapons()) do
-			if wep:GetClass() == "bl_hands" then continue end
-			att:DropWeapon(wep)
-		end
-		ply:SetTeam(TEAM_SPECTATOR)
-	else
-		ply:SetTeam(TEAM_SPECTATOR)
-	end
 	
 	self:RoundCheck()
 end
 
-function GM:PlayerShouldTakeDamage(ply, att)
-	if ply:Team() == TEAM_VAMPIRE and (att:IsPlayer() and att:Team() == TEAM_VAMPIRE) then
-		return false
-	elseif ply:Team() == TEAM_GHOUL and (att:IsPlayer() and att:Team() == TEAM_GHOUL) then
-		return false
-	elseif ply:Team() == TEAM_VAMPIRE and (att:IsPlayer() and att:Team() == TEAM_GHOUL) then
-		return false
-	elseif ply:Team() == TEAM_GHOUL and (att:IsPlayer() and att:Team() == TEAM_VAMPIRE) then
-		return false
-	end
-		
+local function CreateRagdollBody(ply, team)
+	local ragdoll = ents.Create("prop_ragdoll")
+	ragdoll:SetModel(ply:GetModel())
+	ragdoll:SetPos(ply:GetPos())
+	ragdoll:SetAngles(ply:GetAngles())
+	ragdoll:Spawn()
+	
+	timer.Simple(0.1, function()
+		net.Start("bl_clientragdoll")
+			net.WriteEntity(ragdoll)
+		net.Send(ply)
+	end)
+	
+	ragdoll.blood = 40
+	ragdoll.team = team
+	ragdoll.player = ply
+	
+	ply.body = ragdoll
+end
+
+local RESTRICT_VAMPIRE = {
+	["weapon_crossbow"] = true,
+	["weapon_bl_stake"] = true
+	
+}
+
+function GM:PlayerCanPickupWeapon(ply, weapon)
+	if (ply:Team() == TEAM_VAMPIRE or ply:Team() == TEAM_GHOUL) and RESTRICT_VAMPIRE[weapon] then return false end
+	
+	if (ply:Team() == TEAM_HUMAN and ply:Team() == TEAM_HUNTER) and ply.cooldown >= CurTime() then return false end
+	
 	return true
 end
 
-local activePlayers = {}
+function GM:DoPlayerDeath(ply, att, dmgInfo)
+	CreateRagdollBody(ply, ply:Team())
+
+	if (ply:Team() == TEAM_VAMPIRE or ply:Team() == TEAM_GHOUL) then
+		
+		if att:GetActiveWeapon():GetClass() == "weapon_crossbow" then
+			
+			if string.find(ply:GetModel(), "female") then
+				ply:EmitSound("bloodlust/vampirefemaledeath.wav")
+			else
+				ply:EmitSound("bloodlust/vampiremaledeath.wav")
+			end
+	
+			ply:Freeze(true)
+			ply.body:Ignite(6, 0)
+			
+			timer.Simple(13, function()
+				ply:Freeze(false)
+			end)
+			
+			ply:SetTeam(TEAM_SPECTATOR)	
+		else
+			ply:Freeze(true)
+			local resurrectPos = ply.body:GetPos()
+			timer.Create("bl_resurrect", 10, 1, function()
+				if ply:Team() == TEAM_SPECTATOR or not IsValid(ply.body) then return end
+				ply:Spawn()
+				ply:SetPos(resurrectPos)
+				if string.find(ply:GetModel(), "female") then
+					ply:EmitSound("bloodlust/resurrectfemale.wav")
+				else
+					ply:EmitSound("bloodlust/resurrectmale.wav")
+				end
+				ply.body:Remove()
+				
+				timer.Simple(0.1, function()
+					ply:Freeze(false)
+					ply:Give("weapon_bl_fangs")
+				end)
+			end)
+			return
+		end
+	elseif ply:Team() == TEAM_HUMAN and ply.killer then		
+		ply:Freeze(true)
+		local resurrectPos = ply.body:GetPos()
+		ply:SetTeam(TEAM_GHOUL)
+		
+		timer.Simple(12, function()
+			ply:ChatPrint("You are now a ghoul")
+			ply:Spawn()
+			ply:SetPos(resurrectPos)
+			ply:Freeze(false)
+			if ply.body then
+				ply.body:Remove()
+			end
+			
+			timer.Simple(0.1, function()
+				ply:Give("weapon_bl_fangs")
+			end)
+		end)
+	elseif ply:Team() == TEAM_HUMAN and att and att:IsPlayer() and (att:Team() == TEAM_HUNTER or att:Team() == TEAM_HUMAN) then
+		
+		for _, wep in pairs(att:GetWeapons()) do
+			if wep:GetClass() == "weapon_bl_hands" then continue end
+			att:DropWeapon(wep)
+			att.cooldown = CurTime() + 15
+			print(att.cooldown)
+		end
+		
+		ply:SetTeam(TEAM_SPECTATOR)
+	elseif not att then
+		ply:SetTeam(TEAM_SPECTATOR)
+	end
+	
+	net.Start("bl_playerdeath")
+	net.Send(ply)
+	
+	self:RoundCheck()
+
+end
 
 local specEnt = 1
 hook.Add("KeyPress", "SpecKey", function(ply, key)

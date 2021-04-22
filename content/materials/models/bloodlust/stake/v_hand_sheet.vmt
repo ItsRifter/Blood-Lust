@@ -1,0 +1,12 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models/bloodlust/stake/v_hand_sheet"
+	"$bumpmap" "models/bloodlust/stake/v_hand_sheet_normal"
+	"$envmap" "env_cubemap"
+	"$envmaptint" "[ .64 .64 .64 ]"
+	"$normalmapalphaenvmapmask" 1
+	"$cloakpassenabled"	"1"
+	"$cloakfactor"		"0"
+	"$cloakcolortint"	"[1.0 0.1 0.1]"
+	"$refractamount"	".5"
+}
