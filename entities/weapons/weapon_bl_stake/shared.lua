@@ -2,14 +2,16 @@ AddCSLuaFile()
 
 SWEP.Author = "SuperSponer"
 SWEP.PrintName = "Wooden Stake"
+SWEP.Base = "weapon_base"
 SWEP.Instructions = "Aim for the heart"
 
 SWEP.UseHands = false
 SWEP.WorldModel = ""
 SWEP.ViewModel = "models/weapons/bloodlust/v_stake.mdl"
+SWEP.WorldModel = "models/weapons/bloodlust/w_stake.mdl"
 
-SWEP.Slot = 1
-SWEP.SlotPos = 1
+SWEP.Slot = 0
+SWEP.SlotPos = 0
 SWEP.DrawAmmo = false
 SWEP.DrawCrosshair = true
 
@@ -24,7 +26,7 @@ SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = 0
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "none"
-
+SWEP.Primary.Damage = 35
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = 0
 SWEP.Secondary.Automatic = false
@@ -46,54 +48,62 @@ function SWEP:PrimaryAttack()
 	
 	pl:LagCompensation(true)
 	
-	local shootPos = pl:GetShootPos()
-	local endShootPos = shootPos + pl:GetAimVector() * 90
-	local tmin = Vector(1, 1, 1 ) * -10 
-	local tmax = Vector(1, 1, 1 ) * 10
+	local tr = {}
+	tr.start = self.Owner:GetShootPos()
+	tr.endpos = self.Owner:GetShootPos() + ( self.Owner:GetAimVector() * 125 )
+	tr.filter = self.Owner
+	tr.mask = MASK_SHOT
 	
-	local tr = util.TraceHull( {
-		start = shootPos,
-		endpos = endShootPos,
-		filter = pl,
-		mask = MASK_SHOT_HULL,
-		mins = tmin,
-		maxs = tmax,
-	} )
+	local trace = util.TraceLine( tr )
 	
-	local ent = tr.Entity
-	
-	if IsValid(ent) and ent:IsPlayer() then
-		self.Weapon:SendWeaponAnim(ACT_VM_HITCENTER)
-		pl:SetAnimation(PLAYER_ATTACK1)
+	self.Owner:SetAnimation( PLAYER_ATTACK1 )
 
-		pl:EmitSound(stabSound)
-		ent:SetHealth(ent:Health() - 25)
-		
-		if ent:Health() < 1 then
-			ent:Kill()
+	if ( trace.Hit and not trace.HitWorld ) then
+
+		if trace.Entity:IsPlayer() then
+			self.Weapon:SendWeaponAnim(ACT_VM_HITCENTER)
+			pl:EmitSound(stabSound)
+			
+			bullet = {}
+			bullet.Num    = 1
+			bullet.Src    = self.Owner:GetShootPos()
+			bullet.Dir    = self.Owner:GetAimVector()
+			bullet.Spread = Vector(0, 0, 0)
+			bullet.Tracer = 0
+			bullet.Force  = 1
+			bullet.Damage = self.Primary.Damage
+			self.Owner:FireBullets(bullet)
+			pl:EmitSound(stabSound)
+
+		elseif trace.Entity and trace.Entity.player and trace.Entity.team and (trace.Entity.team == TEAM_VAMPIRE or trace.Entity.team == TEAM_GHOUL) then
+			self.Weapon:SendWeaponAnim(ACT_VM_HITCENTER)
+			pl:SetAnimation(PLAYER_ATTACK1)
+			
+			pl:EmitSound(stabSound)
+			
+			if trace.Entity.player:Team() == TEAM_SPECTATOR then 
+				self:SetNextPrimaryFire(CurTime() + self:SequenceDuration() + 0.5)
+				pl:LagCompensation(false)
+				return 
+			end
+			
+			trace.Entity.player:SetTeam(TEAM_SPECTATOR)
+			if string.find(trace.Entity:GetModel(), "female") then
+				trace.Entity:EmitSound("bloodlust/vampirefemaledeath.wav")
+			else
+				trace.Entity:EmitSound("bloodlust/vampiremaledeath.wav")
+			end
+			trace.Entity:Ignite(6, 0)
+			GAMEMODE:RoundCheck()
+		elseif trace.Entity and trace.Entity.player then
+			self.Weapon:SendWeaponAnim(ACT_VM_HITCENTER)
+			pl:SetAnimation(PLAYER_ATTACK1)
+			
+			pl:EmitSound(stabSound)
 		end
-	elseif ent and ent.player and ent.team and (ent.team == TEAM_VAMPIRE or ent.team == TEAM_GHOUL) then
-		self.Weapon:SendWeaponAnim(ACT_VM_HITCENTER)
-		pl:SetAnimation(PLAYER_ATTACK1)
-		
-		pl:EmitSound(stabSound)
-		
-		if ent.player:Team() == TEAM_SPECTATOR then 
-			self:SetNextPrimaryFire(CurTime() + self:SequenceDuration() + 0.5)
-			pl:LagCompensation(false)
-			return 
-		end
-		
-		ent.player:SetTeam(TEAM_SPECTATOR)
-		if string.find(ent:GetModel(), "female") then
-			ent:EmitSound("bloodlust/vampirefemaledeath.wav")
-		else
-			ent:EmitSound("bloodlust/vampiremaledeath.wav")
-		end
-		ent:Ignite(6, 0)
-		GAMEMODE:RoundCheck()
 	else
 		self.Weapon:SendWeaponAnim(ACT_VM_MISSCENTER)
+		pl:SetAnimation(PLAYER_ATTACK1)
 		pl:EmitSound(swooshSound)
 	end
 	

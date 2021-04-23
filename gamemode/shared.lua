@@ -4,7 +4,7 @@ GM.Email = "d_thomas_smith30@hotmail.com"
 GM.Website = "N/A"
 
 include("sh_round_manager.lua")
-AddCSLuaFile("sh_round_manager.lua")
+include("sh_translate.lua")
 
 function GM:CreateTeams()	
 	TEAM_HUMAN = 1
@@ -29,4 +29,4 @@ GM.ConVars.VampireCount = CreateConVar("bl_vampcount", 2, { FCVAR_ARCHIVE, FCVAR
 GM.ConVars.HunterCount = CreateConVar("bl_huntcount", 2, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "Initial hunters per round", 1, 2)
 GM.ConVars.MinHunters = CreateConVar("bl_minhunters", 6, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "Minimum players needed for more hunters", 1)
 GM.ConVars.MinVampires = CreateConVar("bl_minvampires", 5, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "Minimum players needed for more vampires", 1)
-
+GM.ConVars.SpecialChance = CreateConVar("bl_specialchance", 65, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "The chance of a special round")

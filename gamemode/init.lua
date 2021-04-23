@@ -14,9 +14,16 @@ util.AddNetworkString("bl_playerdeath")
 util.AddNetworkString("bl_clientragdoll")
 
 function GM:BroadcastMessage(...)
-	net.Start("bl_messagesay")
-		net.WriteTable({...})
-	net.Broadcast()
+	
+	if table.HasValue(..., ply) then
+		net.Start("bl_messagesay")
+			net.WriteTable({...})
+		net.Send(ply)
+	else
+		net.Start("bl_messagesay")
+			net.WriteTable({...})
+		net.Broadcast()
+	end
 end
 
 function GM:BroadcastSound(soundPath, ply)

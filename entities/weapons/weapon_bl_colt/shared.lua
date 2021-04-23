@@ -20,7 +20,7 @@ SWEP.Spawnable = false
 SWEP.AdminSpawnable = false
 
 SWEP.SetHoldType = "pistol"
-SWEP.Primary.Damage = 8
+SWEP.Primary.Damage = 13
 SWEP.Primary.ClipSize = 7
 SWEP.Primary.DefaultClip = 7
 SWEP.Primary.Automatic = false
@@ -29,7 +29,7 @@ SWEP.Primary.NumShots = 1
 SWEP.Primary.Spread = 0
 SWEP.Primary.Cone = 0
 SWEP.Primary.Delay = 0.1
-
+SWEP.Primary.Recoil = 1.2
 
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = 0
@@ -47,9 +47,11 @@ end
 
 function SWEP:PrimaryAttack()
 	
-	local pl = self:GetOwner()
+	if not self:CanPrimaryAttack() then return end
 	
-	pl:LagCompensation(true)
+	self.Owner:LagCompensation(true)
+	
+	local pl = self:GetOwner()
 	local bullet = {}
 	bullet.num = self.Primary.NumShots
 	bullet.Src = pl:GetShootPos()
@@ -64,11 +66,24 @@ function SWEP:PrimaryAttack()
 	
 	self:EmitSound(fireSound)
 	
+	local rnda = self.Primary.Recoil * -1 
+	local rndb = self.Primary.Recoil * math.random(-1, 1) 
+	self.Owner:ViewPunch(Angle( rnda,rndb,rnda )) 
+	
 	self.BaseClass.ShootEffects(self)
 	self:TakePrimaryAmmo(1)
 	self:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
 	
-	pl:LagCompensation(false)
+	self.Owner:LagCompensation(false)
+end
+
+function SWEP:Reload()
+	if CLIENT then return end 
+	if not self:DefaultReload( ACT_VM_RELOAD ) then return end
+	self:DefaultReload( ACT_VM_RELOAD )
+	self:SetNextPrimaryFire(CurTime() + self:SequenceDuration())
+	self.Owner:EmitSound("weapons/pistol/pistol_reload1.wav", 100, 100)
+	
 end
 
 function SWEP:SecondaryAttack()

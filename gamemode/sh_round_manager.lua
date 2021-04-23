@@ -1,18 +1,31 @@
+AddCSLuaFile()
+
 GAME_PREROUND, GAME_ACTIVE, GAME_POSTROUND = 1, 2, 3
 
 GAME_HUMANWIN, GAME_VAMPIREWIN, GAME_RESTART, GAME_ABORT = 1, 2, 3, 4
 
-GM.GameTime = 0
-GM.GameCount = -1
-GM.GameState = GM.GameState or GAME_PREROUND
-GM.GameIdle = true
-GM.ActivePlayers = {}
-if SERVER then
 
+if SERVER then		
+	--Return the current round's status
 	function GM:GetRoundStatus()
-		--Return the current round's status
-		return self.GameState
+		if self.GameState then
+			return self.GameState
+		else
+			return GAME_PREROUND
+		end
 	end
+	
+	GM.GameTime = 0
+	GM.GameCount = -1
+	GM.GameState = GM:GetRoundStatus() or GAME_PREROUND
+	GM.GameIdle = true
+	GM.ActivePlayers = {}
+	
+	GM.SpecialRoundTbl = {
+		"HuntersVsVampires",
+	}
+	
+	
 	
 	function GM:RoundCheck()
 		if self.GameState == GAME_ACTIVE then
@@ -29,11 +42,37 @@ if SERVER then
 			if #player.GetAll() >= 2 and self.GameIdle then
 				self.GameIdle = false
 				self:BroadcastMessage(Color(255, 255, 255), "Enough players connected, Starting game...")
-				timer.Simple(5, function()
+				self.GameCount = self.ConVars.MaxRounds:GetInt()
+				timer.Simple(8, function()
 					self:RoundRestart()
 				end)
 			end
 		end
+	end
+
+	function GM:SpecialRoundStart(roundType)
+		if roundType == "HuntersVsVampires" then
+			for _, v in pairs(player.GetAll()) do
+				if v:Team() == TEAM_HUMAN then break end
+				
+				local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+				vampire:SetTeam(TEAM_VAMPIRE)
+				vampire:Spawn()
+				timer.Simple(0.1, function()
+					vampire:Give("weapon_bl_fangs")
+				end)
+				
+				local hunter = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+				hunter:SetTeam(TEAM_HUNTER)
+				hunter:Spawn()
+				timer.Simple(0.1, function()
+					hunter:Give("weapon_crossbow")
+					hunter:Give("weapon_bl_stake")
+				end)
+			end
+		end
+		
+		
 	end
 
 	function GM:RoundRestart()
@@ -61,25 +100,34 @@ if SERVER then
 		if #player.GetAll() >= 2 then
 			timer.Simple(0.1, function()
 				self.GameState = GAME_ACTIVE
-				self.GameCount = self.GameCount + 1
 				self:BroadcastSound("bloodlust/roundstart.wav", ply)
 			end)
+			
+			local specialRound = "None"
+			
+			if self.ConVars.SpecialChance:GetInt() >= math.random(1, 100) then
+				specialRound = self.SpecialRoundTbl[math.random(#self.SpecialRoundTbl)]
+			end
+			
 			self:RoundTime(self.ConVars.TimeLimit:GetInt())
-			
-			local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
-			vampire:SetTeam(TEAM_VAMPIRE)
-			vampire:Spawn()
-			timer.Simple(0.1, function()
-				vampire:Give("weapon_bl_fangs")
-			end)
-			
-			local hunter = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
-			hunter:SetTeam(TEAM_HUNTER)
-			hunter:Spawn()
-			timer.Simple(0.1, function()
-				hunter:Give("weapon_crossbow")
-				hunter:Give("weapon_bl_stake")
-			end)
+			if self.SpecialRoundTbl[specialRound] then
+				self:SpecialRoundStart(specialRound)
+			else
+				local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+				vampire:SetTeam(TEAM_VAMPIRE)
+				vampire:Spawn()
+				timer.Simple(0.1, function()
+					vampire:Give("weapon_bl_fangs")
+				end)
+				
+				local hunter = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+				hunter:SetTeam(TEAM_HUNTER)
+				hunter:Spawn()
+				timer.Simple(0.1, function()
+					hunter:Give("weapon_crossbow")
+					hunter:Give("weapon_bl_stake")
+				end)
+			end
 		else
 			self.GameState = GAME_PREROUND
 			self.GameIdle = true
@@ -88,6 +136,7 @@ if SERVER then
 		for _, pl in pairs(player.GetAll()) do
 			net.Start("bl_roundstart")
 				net.WriteInt(pl:Team(), 8)
+				net.WriteString(specialRound or "None")
 			net.Send(pl)
 		end
 	end
@@ -107,6 +156,7 @@ if SERVER then
 	function GM:RoundEnd(state)
 		--Main states
 		self.GameState = GAME_POSTROUND
+		self.GameCount = self.GameCount - 1
 		if state == GAME_HUMANWIN then
 			print("HUMANS WIN")
 			self:BroadcastMessage(Color(255, 210, 150), "Humans have survived the night!")
@@ -122,11 +172,27 @@ if SERVER then
 				self:BroadcastMessage(Color(255, 255, 255), "The round is being restarted")
 			elseif state == GAME_ABORT then
 				print("ROUND ABORTED")
+				self:BroadcastMessage(Color(255, 210, 150), "The vampires fled")
 			end
 		end
 		
+		for _, pl in pairs(player.GetAll()) do
+			CancelRespawn(pl)
+			pl:UnLock()
+		end
+		
 		timer.Simple(7, function()
-			self:RoundRestart()
+			if self.GameCount >= 2 then
+				self:BroadcastMessage(Color(255, 255, 255), self.GameCount .. " Rounds until map change")
+				self:RoundRestart()
+			elseif self.GameCount == 1 then
+				self:BroadcastMessage(Color(255, 255, 255), "LAST ROUND")
+				self:RoundRestart()
+			elseif self.GameCount < 1 then
+				self:BroadcastMessage(Color(255, 255, 255), "Game Over")
+				self:BroadcastSound("bloodlust/endgame.wav")
+				MapVote.Start(15, false, 6, "bl_")
+			end
 		end)
 	end
 	

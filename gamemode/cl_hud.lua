@@ -1,5 +1,5 @@
 surface.CreateFont( "bl_teamfont", {
-	font = "October Crow",
+	font = "DermaLarge",
 	extended = false,
 	size = 128,
 	weight = 500,
@@ -8,8 +8,28 @@ surface.CreateFont( "bl_teamfont", {
 	antialias = true,
 } )
 
+surface.CreateFont( "bl_namefont", {
+	font = "DermaLarge",
+	extended = false,
+	size = 26,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
+surface.CreateFont( "bl_teamnamefont", {
+	font = "DermaLarge",
+	extended = false,
+	size = 18,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
 surface.CreateFont( "bl_descfont", {
-	font = "October Crow",
+	font = "DermaLarge",
 	extended = false,
 	size = 78,
 	weight = 500,
@@ -19,7 +39,7 @@ surface.CreateFont( "bl_descfont", {
 } )
 
 surface.CreateFont( "bl_deathfont", {
-	font = "October Crow",
+	font = "DermaLarge",
 	extended = false,
 	size = 88,
 	weight = 500,
@@ -28,6 +48,25 @@ surface.CreateFont( "bl_deathfont", {
 	antialias = true,
 } )
 
+surface.CreateFont( "bl_ammofont", {
+	font = "DermaLarge",
+	extended = false,
+	size = 108,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
+surface.CreateFont( "bl_specialfont", {
+	font = "DermaLarge",
+	extended = false,
+	size = 64,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
 
 local hide = {
 	["CHudHealth"] = true,
@@ -46,6 +85,8 @@ local humanBlood = Material("bloodlust/hud/humanblood")
 local vampireBlood = Material("bloodlust/hud/vampireblood")
 
 hook.Add("HUDPaint", "BL_HUDPaint", function()
+	if not LocalPlayer():Alive() then return end
+	--HEALTH
 	local curHealth = LocalPlayer():Health()
 	local maxHealth = LocalPlayer():GetMaxHealth()
 	surface.SetDrawColor( 255, 255, 255, 255 )
@@ -71,10 +112,21 @@ hook.Add("HUDPaint", "BL_HUDPaint", function()
 		surface.DrawTexturedRectUV(x, y + height - barHeight, width, barHeight, 0, 1-barHeight/height, 1, 1)
 	end
 
+	--AMMO
+	if LocalPlayer():GetActiveWeapon() and LocalPlayer():GetActiveWeapon():Clip1() ~= nil and LocalPlayer():GetActiveWeapon():Clip1() >= 0 then
+		local ammo = LocalPlayer():GetActiveWeapon():GetPrimaryAmmoType()
+		local ammoCount = LocalPlayer():GetAmmoCount(ammo)
+		surface.SetFont( "bl_ammofont" )
+		surface.SetTextColor( 170, 0, 0 )
+		surface.SetTextPos( ScrW() / 1.20, ScrW() / 2 ) 
+		surface.DrawText(tostring(LocalPlayer():GetActiveWeapon():Clip1()) .. "/" .. tostring(ammoCount))
+	end
+
 end)
 
 function NewRoundMenu()
 	local team = net.ReadInt(8)
+	local special = net.ReadString() or "None"
 	local description = ""
 	
 	local roundPnl = vgui.Create("DPanel")
@@ -83,32 +135,53 @@ function NewRoundMenu()
 		surface.SetDrawColor(0, 0, 0, 255)
 		surface.DrawRect(0, 0, w, h)
 	end
+
+	if special ~= "None" then
 	
-	local label1 = vgui.Create("DLabel", roundPnl)
-	label1:SetText("You are a")
-	label1:SetFont("bl_teamfont")
-	label1:SetPos(ScrW() / 2 - 225, ScrH() / 6)
-	label1:SizeToContents()
-	
+		local specialAlert = vgui.Create("DLabel", roundPnl)
+		specialAlert:SetFont("bl_specialfont")
+		specialAlert:SetText(translate.Get("SpecialRound"))
+		specialAlert:SetPos(ScrW() / 2 - 185, ScrH() / 2 - 450)
+		specialAlert:SizeToContents()
+		local specialLabel = vgui.Create("DLabel", roundPnl)
+		specialLabel:SetFont("bl_specialfont")
+		
+		
+		local specialDescLabel = vgui.Create("DLabel", roundPnl)
+		specialDescLabel:SetFont("bl_specialfont")
+		specialDescLabel:SetPos(ScrW() / 2 - 225, ScrH() / 2 - 375)
+		specialDescLabel:SetText(translate.Get(special))
+		
+		specialLabel:SetText(translate.Get(special .. "Desc"))
+		
+		specialLabel:SetPos(ScrW() / 2 - 600, ScrH() / 2 - 250)
+		
+		specialLabel:SizeToContents()
+		specialDescLabel:SizeToContents()
+	end
+
 	local teamnameLabel = vgui.Create("DLabel", roundPnl)
 	teamnameLabel:SetFont("bl_teamfont")
-	if team == TEAM_HUMAN then
-		teamnameLabel:SetText(" HUMAN")
-		description = "   Survive the night, don't get bitten\n              and trust the hunter"
-	elseif team == TEAM_HUNTER then
-		teamnameLabel:SetText(" HUNTER")
-		description = "             Find and kill the vampire\n                  take care hunter"
-	elseif team == TEAM_VAMPIRE then
-		teamnameLabel:SetText("VAMPIRE")
-		description = "                 Feed off the living\n        don't get killed by the hunter"
-	end
-	teamnameLabel:SetPos(ScrW() / 2 - 185, ScrH() / 3)
-	teamnameLabel:SizeToContents()
 	
 	local descLabel = vgui.Create("DLabel", roundPnl)
 	descLabel:SetFont("bl_descfont")
+	if team == TEAM_HUMAN then
+		teamnameLabel:SetText(translate.Get("Human"))
+		description = translate.Get("HumanDesc")
+		descLabel:SetPos(ScrW() / 2 - 225, ScrH() - 450)
+	elseif team == TEAM_HUNTER then
+		teamnameLabel:SetText(translate.Get("Hunter"))
+		description = translate.Get("HunterDesc")
+		descLabel:SetPos(ScrW() / 2 - 325, ScrH() - 450)
+	elseif team == TEAM_VAMPIRE then
+		teamnameLabel:SetText(translate.Get("Vampire"))
+		description = translate.Get("VampireDesc")
+		descLabel:SetPos(ScrW() / 2 - 400, ScrH() - 450)
+	end
+	teamnameLabel:SetPos(ScrW() / 2 - 400, ScrH() / 3)
+	teamnameLabel:SizeToContents()
+	
 	descLabel:SetText(description)
-	descLabel:SetPos(ScrW() / 2 - 600, ScrH() - 450)
 	descLabel:SizeToContents()
 	
 	timer.Simple(6, function()
@@ -137,25 +210,79 @@ function DeathMenu()
 		surface.SetDrawColor(0, 0, 0, 255)
 		surface.DrawRect(0, 0, w, h)
 	end
-	
 
-	
-	deathPnl:AlphaTo(255, 0.5, 1, function() 	
-		local deathLabel = vgui.Create("DLabel", deathPnl)
-		deathLabel:SetPos(ScrW() / 2 - 100, ScrH() / 2)
-		deathLabel:SetText("YOU DIED")
-		deathLabel:SetFont("bl_deathfont")
-		deathLabel:SizeToContents()
-	end)
-	
+	deathPnl:AlphaTo(255, 0.5, 1, function() end)
 
-	timer.Simple(11, function()
-		deathPnl:AlphaTo(0, 0.1, 1, function()
-			deathPnl:Remove()
-		end)
+	timer.Simple(6, function()
+		deathPnl:AlphaTo(0, 0.1, 1, function() end)
 	end)
 end
 
+local CLIENT_MALE_NAMES = {
+	"Jeff",
+	"David",
+	"Johnny"
+}
+
+local CLIENT_FEMALE_NAMES = {
+	"Catherine",
+	"Kate",
+	"Lisa"
+}
+
+function GM:HUDDrawTargetID()
+	local tr = util.GetPlayerTrace( LocalPlayer() )
+	local trace = util.TraceLine( tr )
+	if (!trace.Hit) then return end
+	if (!trace.HitNonWorld) then return end
+	
+	if not LocalPlayer():Alive() then return end
+	
+	local text = "NOBODY"
+	local team = "Human"
+		
+	if (trace.Entity:IsPlayer()) then
+		text = trace.Entity:Nick()
+		if LocalPlayer():Team() == TEAM_VAMPIRE then
+			if trace.Entity:Team() == TEAM_VAMPIRE then
+				team = "Vampire"
+			elseif trace.Entity:Team() == TEAM_GHOUL then
+				team = "Ghoul"
+			end
+		
+		elseif LocalPlayer():Team() == TEAM_GHOUL then
+			if trace.Entity:Team() == TEAM_VAMPIRE then
+				team = "Vampire"
+			elseif trace.Entity:Team() == TEAM_GHOUL then
+				team = "Ghoul"
+			end
+		end
+	else
+		return
+	end
+		
+	surface.SetFont( "TargetID" )
+	local w, h = surface.GetTextSize( text )
+		
+	local MouseX, MouseY = gui.MousePos()
+		
+	if ( MouseX == 0 && MouseY == 0 ) then
+		MouseX = ScrW() / 2
+		MouseY = ScrH() / 2
+	end
+		
+	local x = MouseX
+	local y = MouseY
+
+	x = x - w / 2
+	y = y + 30
+
+	draw.SimpleText( text, "TargetID", x+1, y+1, Color(255, 255, 255, 255) )
+	
+	y = y + h + 5
+	
+	draw.SimpleText( team, "TargetIDSmall", x+1, y+1, Color(255, 255, 255, 255) )
+end
 
 
 hook.Add( "CalcView", "bl_deathview", function( ply, origin, angles, fov )

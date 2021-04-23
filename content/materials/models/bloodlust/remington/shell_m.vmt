@@ -1,0 +1,22 @@
+
+vertexlitgeneric
+{
+
+	$basetexture models/bloodlust/remington/shell_d
+	$bumpmap models/bloodlust/remington/shell_b
+	$lightwarptexture dev/identitylightwarp
+
+	$halflambert 1
+	$ambientocclusion 1
+
+	$phong 1
+	$phongboost 50
+	$phongexponent 30
+	$phongexponenttexture models/bloodlust/remington/shell_x
+	$phongfresnelranges "[0.25 0.5 1]"
+	$phongalbedotint 1
+	$phongalbedoboost 48
+
+	$color2 "[ 0 0 0 ]"
+	$blendtintbybasealpha 1
+}

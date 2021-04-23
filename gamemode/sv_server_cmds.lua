@@ -1,7 +1,23 @@
+concommand.Add("bl_debug", function(ply)
+	if not ply:IsValid() then return end
+	
+	net.Start("bl_roundstart")
+		net.WriteInt(ply:Team(), 8)
+		net.WriteString("None")
+	net.Send(ply)
+
+end)
+
 concommand.Add("bl_restart", function(ply)
 	if ply:IsValid() then return end
 	
 	GAMEMODE:RoundEnd(GAME_RESTART)
+end)
+
+concommand.Add("bl_check", function(ply)
+	if ply:IsValid() then return end
+	
+	GAMEMODE:RoundCheck()
 end)
 
 concommand.Add("bl_state", function(ply)

@@ -1,0 +1,18 @@
+
+vertexlitgeneric
+{
+
+	$basetexture models/bloodlust/remington/w870_d
+	$bumpmap models/bloodlust/remington/w870_b
+	$lightwarptexture dev/identitylightwarp
+
+	$halflambert 1
+	$ambientocclusion 1
+	$ambientocclusiontexture models/bloodlust/remington/w870_ao
+
+	$phong 1
+	$phongboost 3
+	$phongexponent 20
+	$phongexponenttexture models/bloodlust/remington/w870_x
+	$phongfresnelranges "[0.25 0.5 1]"
+}
