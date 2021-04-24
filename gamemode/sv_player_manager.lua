@@ -13,14 +13,7 @@ local FEMALE_NAMES = {
 function GM:PlayerInitialSpawn(ply)
 	self:RoundCheck()
 end
-function GM:PlayerSpawn(ply)
-	if not ply:Team() and self:GetRoundStatus() == GAME_ACTIVE then
-		ply:SetTeam(TEAM_SPECTATOR)
-		ply:Spectate(OBS_MODE_IN_EYE)
-		ply:SetNoDraw(true)
-		ply:AllowFlashlight(false)
-	end
-	
+function GM:PlayerSpawn(ply)	
 	ply:StripWeapons()
 	ply:RemoveAllAmmo()
 	ply:SetRunSpeed(300)
@@ -75,8 +68,7 @@ local function CreateRagdollBody(ply, team)
 end
 
 local RESTRICT_VAMPIRE = {
-	["weapon_crossbow"] = true,
-	["weapon_bl_stake"] = true
+	["weapon_crossbow"] = true
 	
 }
 local waitNextUse = 0
@@ -96,7 +88,7 @@ local RESTRICT_DROPPING = {
 }
 
 function GM:KeyPress( ply, key )
-	if key == 524288 then
+	if key == IN_ZOOM then
 		if RESTRICT_DROPPING[ply:GetActiveWeapon():GetClass()] then 
 			return
 		else
@@ -121,7 +113,6 @@ function BeginResurrection(ply, body)
 			else
 				body:EmitSound("bloodlust/resurrectmale.wav", 150, 100)
 			end
-			ply:UnSpectate()
 			ply:Spawn()
 			ply:UnLock()
 			
@@ -140,7 +131,6 @@ function BeginTransformation(ply, body)
 		if GAMEMODE:GetRoundStatus() ~= GAME_ACTIVE then return end
 		
 		ply:SetTeam(TEAM_GHOUL)
-		ply:UnSpectate()
 		ply:Spawn()
 		
 		timer.Simple(0.1, function()
@@ -158,10 +148,61 @@ function CancelRespawn(ply)
 	timer.Remove("bl_transform")
 end
 
+hook.Add("Tick", "bl_ammocheck", function()
+	for k, pl in pairs(player.GetAll()) do
+		
+		if pl:GetAmmoCount(3) >= GAMEMODE.ConVars.PistolMax:GetInt() then
+			pl:SetAmmo(GAMEMODE.ConVars.PistolMax:GetInt(), 3)
+		end
+		
+		if pl:GetAmmoCount(7) >= GAMEMODE.ConVars.BuckshotMax:GetInt() then
+			pl:SetAmmo(GAMEMODE.ConVars.BuckshotMax:GetInt(), 7)
+		end
+		
+		if pl:GetAmmoCount(5) >= GAMEMODE.ConVars.RifleMax:GetInt() then
+			pl:SetAmmo(GAMEMODE.ConVars.RifleMax:GetInt(), 5)
+		end
+	end
+end)
+
+local function AmmoCheck(ply, ammo)
+	--Colt/Pistol ammo
+	if ammo:GetClass() == "item_ammo_pistol" and ply:GetAmmoCount(3) >= GAMEMODE.ConVars.PistolMax:GetInt() then
+		return false
+	end
+	
+	--Buckshot/Shotgun ammo
+	if ammo:GetClass() == "item_box_buckshot" and ply:GetAmmoCount(7) >= GAMEMODE.ConVars.BuckshotMax:GetInt() then
+		return false
+	end
+	
+	--Rifle/357 ammo
+	if ammo:GetClass() == "item_ammo_357_large" and ply:GetAmmoCount(5) >= GAMEMODE.ConVars.RifleMax:GetInt() then
+		return false
+	end
+	
+	return true
+end
+
+
+function GM:PlayerCanPickupItem(ply, item)
+	return AmmoCheck(ply, item)
+end
+
+local NO_DEATH_DROP_WEPS = {
+	["weapon_bl_fangs"] = true
+}
+
 function GM:DoPlayerDeath(ply, att, dmgInfo)
+	
 	ply.body = CreateRagdollBody(ply, ply:Team())
 	ply:Flashlight(false)
 	ply:AllowFlashlight(false)
+	
+	for _, wep in pairs(ply:GetWeapons()) do
+		if NO_DEATH_DROP_WEPS[wep:GetClass()] then ply:StripWeapon(wep:GetClass()) break end
+		ply:DropWeapon(wep)
+	end
 	
 	if ply:Team() == TEAM_VAMPIRE or ply:Team() == TEAM_GHOUL then
 		BeginResurrection(ply, ply.body)
@@ -170,24 +211,20 @@ function GM:DoPlayerDeath(ply, att, dmgInfo)
 	if ply:Team() == TEAM_HUMAN and att:IsPlayer() and att:Team() == TEAM_VAMPIRE and att:GetActiveWeapon():GetClass() == "weapon_bl_fangs" then
 		BeginTransformation(ply, ply.body)
 		return
-	elseif ply:Team() == TEAM_HUMAN and att:Team() == TEAM_HUNTER then
-		for _, wep in pairs(att:GetWeapons()) do
-			att:DropWeapon(wep)
-		end
 	end
 	
-	if ply:Team() == TEAM_HUNTER then
-		for _, wep in pairs(ply:GetWeapons()) do
-			ply:DropWeapon(wep)
-		end
-	end
-	
-	timer.Simple(1, function()
+	if (ply:Team() == TEAM_HUMAN or ply:Team() == TEAM_HUNTER) and (att:Team() ~= TEAM_VAMPIRE or att:Team() ~= TEAM_GHOUL) then
 		net.Start("bl_playerdeath")
 		net.Send(ply)
-	end)
+		
+		ply:SetTeam(TEAM_SPECTATOR)
+		timer.Simple(0.1, function()
+			ply:Spectate(OBS_MODE_IN_EYE)
+			ply:SetNoDraw(true)
+			ply:AllowFlashlight(false)
+		end)
 	
-	ply:SetTeam(TEAM_SPECTATOR)
+	end
 	self:RoundCheck()
 end
 

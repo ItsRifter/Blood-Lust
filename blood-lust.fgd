@@ -1,0 +1,8 @@
+
+@include "base.fgd"
+@include "halflife2.fgd"
+@include "garrysmod.fgd"
+
+@PointClass base(Weapon) studio("models/weapons/bloodlust/w_colt.mdl") = weapon_bl_colt : "Colt 1911" []
+@PointClass base(Weapon) studio("models/weapons/bloodlust/w_shotgun.mdl") = weapon_bl_remington : "Remington 870" []
+@PointClass base(Weapon) studio("models/weapons/bloodlust/w_stake.mdl") = weapon_bl_stake : "Wooden Stake" []

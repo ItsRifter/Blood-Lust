@@ -42,6 +42,10 @@ function SWEP:SecondaryAttack()
 	return
 end
 
+function SWEP:DoDrawCrosshair(x, y)
+	return true
+end
+
 function SWEP:Deploy()
 	if CLIENT then return end
 	self.Owner:DrawWorldModel(false)

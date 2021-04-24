@@ -26,8 +26,7 @@ SWEP.Primary.DefaultClip = 7
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "pistol"
 SWEP.Primary.NumShots = 1
-SWEP.Primary.Spread = 0
-SWEP.Primary.Cone = 0
+SWEP.Primary.Cone = 0.05
 SWEP.Primary.Delay = 0.1
 SWEP.Primary.Recoil = 1.2
 
@@ -56,7 +55,7 @@ function SWEP:PrimaryAttack()
 	bullet.num = self.Primary.NumShots
 	bullet.Src = pl:GetShootPos()
 	bullet.Dir = pl:GetAimVector()
-	bullet.Spread = Vector(self.Primary.Spread, self.Primary.Spread, 0)
+	bullet.Spread = Vector(self.Primary.Cone, self.Primary.Cone, 0)
 	bullet.Tracer = 0
 	bullet.Damage = self.Primary.Damage
 	bullet.AmmoType = self.Primary.Ammo

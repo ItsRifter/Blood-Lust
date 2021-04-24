@@ -23,6 +23,9 @@ resource.AddFile("materials/models/bloodlust/remington/w870_b.vtf")
 resource.AddFile("materials/models/bloodlust/remington/w870_d.vtf")
 resource.AddFile("materials/models/bloodlust/remington/w870_x.vtf")
 
+--KillIcons
+resource.AddFile("materials/bloodlust/killicons/weapon_bl_fangs.png")
+
 --Models
 resource.AddFile("models/weapons/bloodlust/w_stake.mdl")
 resource.AddFile("models/weapons/bloodlust/v_stake.mdl")
@@ -30,6 +33,8 @@ resource.AddFile("models/weapons/bloodlust/w_colt.mdl")
 resource.AddFile("models/weapons/bloodlust/v_colt.mdl")
 resource.AddFile("models/weapons/bloodlust/w_shotgun.mdl")
 resource.AddFile("models/weapons/bloodlust/v_shotgun.mdl")
+resource.AddFile("models/weapons/bloodlust/w_annabelle.mdl")
+resource.AddFile("models/weapons/bloodlust/v_annabelle.mdl")
 
 --Sounds
 resource.AddFile("sound/bloodlust/vampirewin.wav")

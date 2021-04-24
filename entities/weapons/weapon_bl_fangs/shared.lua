@@ -2,11 +2,14 @@ AddCSLuaFile()
 
 SWEP.Author = "SuperSponer"
 SWEP.PrintName = "Fangs"
-SWEP.Instructions = "Bite humans"
+SWEP.Instructions = "Bite humans\nBEWARE: Will alert humans of your attacks"
 
 SWEP.UseHands = false
 SWEP.WorldModel = ""
 SWEP.ViewModel = ""
+
+SWEP.WepSelectIcon = Material("bloodlust/killicons/weapon_bl_fangs.png")
+SWEP.BounceWeaponIcon = false
 
 SWEP.Slot = 1
 SWEP.SlotPos = 1
@@ -107,4 +110,26 @@ function SWEP:DoDrawCrosshair(x, y)
 	surface.SetMaterial(crosshair)
 	surface.DrawTexturedRect(x - 32, y - 32, 48, 64)
 	return true
+end
+
+function SWEP:DrawWeaponSelection( x, y, wide, tall, alpha )
+	
+	-- Set us up the texture
+	surface.SetDrawColor( 255, 255, 255, alpha )
+	surface.SetMaterial( self.WepSelectIcon )
+	
+	-- Lets get a sin wave to make it bounce
+	local fsin = 20
+	
+	-- Borders
+	y = y + 35
+	x = x + 10
+	wide = wide - 20
+	
+	-- Draw that mother
+	surface.DrawTexturedRect( x + (fsin), y - (fsin),  wide-fsin*2 , ( wide / 2 ) + (fsin) )
+	
+	-- Draw weapon info box
+	self:PrintWeaponInfo( x + wide + 20, y + tall * 0.95, alpha )
+	
 end

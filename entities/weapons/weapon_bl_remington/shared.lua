@@ -47,21 +47,13 @@ function SWEP:Initialize()
 end
 
 function SWEP:PrimaryAttack()
-	if not self:CanPrimaryAttack() then return end
+	if not self:CanPrimaryAttack() or self.IsReloading then return end
 	
 	self.Owner:LagCompensation(true)
 	
 	local fireSound = Sound("bloodlust/shotgun_fire" .. math.random(6, 7) .. ".wav")
 	
 	local pl = self:GetOwner()
-	local shell = {}
-	shell.num = self.Primary.NumShots
-	shell.Src = pl:GetShootPos()
-	shell.Dir = pl:GetAimVector()
-	shell.Spread = self.Primary.Cone, self.Primary.Cone
-	shell.Tracer = 0
-	shell.Damage = self.Primary.Damage
-	shell.AmmoType = self.Primary.Ammo
 	
 	self:ShootBullet(self.Primary.Damage, self.Primary.NumShots, self.Primary.Cone)
 	self:ShootEffects()

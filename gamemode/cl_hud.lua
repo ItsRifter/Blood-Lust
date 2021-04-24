@@ -58,6 +58,16 @@ surface.CreateFont( "bl_ammofont", {
 	antialias = true,
 } )
 
+surface.CreateFont( "bl_timefont", {
+	font = "DermaLarge",
+	extended = false,
+	size = 72,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
 surface.CreateFont( "bl_specialfont", {
 	font = "DermaLarge",
 	extended = false,
@@ -79,6 +89,10 @@ hook.Add("HUDShouldDraw", "HideHUD", function(name)
 	end
 end)
 
+function GM:HUDAmmoPickedUp(itemName, count)
+	return false
+end
+
 local humanHealth = Material("bloodlust/hud/human")
 local vampireHealth = Material("bloodlust/hud/vampire")
 local humanBlood = Material("bloodlust/hud/humanblood")
@@ -86,6 +100,7 @@ local vampireBlood = Material("bloodlust/hud/vampireblood")
 
 hook.Add("HUDPaint", "BL_HUDPaint", function()
 	if not LocalPlayer():Alive() then return end
+	
 	--HEALTH
 	local curHealth = LocalPlayer():Health()
 	local maxHealth = LocalPlayer():GetMaxHealth()
@@ -95,7 +110,7 @@ hook.Add("HUDPaint", "BL_HUDPaint", function()
 	local imagePixelSize = 64
 	--local bloodImageBorder = 4
 	
-	if LocalPlayer():Team() == TEAM_HUMAN or LocalPlayer():Team() == TEAM_HUNTER then
+	if LocalPlayer():Alive() and LocalPlayer():Team() ~= TEAM_SPECTATOR or (LocalPlayer():Team() == TEAM_HUMAN or LocalPlayer():Team() == TEAM_HUNTER) then
 		surface.SetMaterial(humanHealth)
 		surface.DrawTexturedRect(x, y, width, height)
 
@@ -113,21 +128,32 @@ hook.Add("HUDPaint", "BL_HUDPaint", function()
 	end
 
 	--AMMO
-	if LocalPlayer():GetActiveWeapon() and LocalPlayer():GetActiveWeapon():Clip1() ~= nil and LocalPlayer():GetActiveWeapon():Clip1() >= 0 then
+	if LocalPlayer():Alive() and LocalPlayer():GetActiveWeapon() and LocalPlayer():GetActiveWeapon():Clip1() ~= nil and LocalPlayer():GetActiveWeapon():Clip1() >= 0 then
 		local ammo = LocalPlayer():GetActiveWeapon():GetPrimaryAmmoType()
 		local ammoCount = LocalPlayer():GetAmmoCount(ammo)
 		surface.SetFont( "bl_ammofont" )
 		surface.SetTextColor( 170, 0, 0 )
-		surface.SetTextPos( ScrW() / 1.20, ScrW() / 2 ) 
+		surface.SetTextPos( ScrW() / 1.15, ScrW() / 2 ) 
 		surface.DrawText(tostring(LocalPlayer():GetActiveWeapon():Clip1()) .. "/" .. tostring(ammoCount))
 	end
-
+	
+	--TIMER
+	if timer.Exists("bl_sunrisetime") then
+		surface.SetFont( "bl_timefont" )
+		surface.SetTextColor( 170, 0, 0 )
+		surface.SetTextPos( ScrW() / 4 - 300, ScrW() / 2 + 50 )
+		
+		surface.DrawText(string.FormattedTime(timer.TimeLeft("bl_sunrisetime"), "%2i:%02i" ))
+	end
 end)
 
 function NewRoundMenu()
 	local team = net.ReadInt(8)
 	local special = net.ReadString() or "None"
 	local description = ""
+	
+	timer.Create("bl_sunrisetime", GAMEMODE.ConVars.TimeLimit:GetInt(), 1, function()
+	end)
 	
 	local roundPnl = vgui.Create("DPanel")
 	roundPnl:SetSize(ScrW(), ScrH())
