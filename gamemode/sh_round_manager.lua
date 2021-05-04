@@ -50,10 +50,10 @@ if SERVER then
 
 	function GM:SpecialRoundStart(roundType)
 		if roundType == "HuntersVsVampires" then
-			for _, v in pairs(player.GetAll()) do
-				if v:Team() == TEAM_HUMAN then break end
-				
+			for _, pl in pairs(player.GetAll()) do
+				if pl:Team() ~= TEAM_HUMAN then break end
 				local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+				if not vampire then break end
 				vampire:SetTeam(TEAM_VAMPIRE)
 				vampire:Spawn()
 				timer.Simple(0.1, function()
@@ -61,16 +61,24 @@ if SERVER then
 				end)
 				
 				local hunter = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
+				if not hunter then break end
 				hunter:SetTeam(TEAM_HUNTER)
 				hunter:Spawn()
 				timer.Simple(0.1, function()
 					hunter:Give("weapon_crossbow")
 					hunter:Give("weapon_bl_stake")
 				end)
+				
+				
 			end
+			specialRound = "None"
 		end
-		
-		
+		for _, pl in pairs(player.GetAll()) do
+			net.Start("bl_roundstart")
+				net.WriteInt(pl:Team(), 8)
+				net.WriteString(roundType)
+			net.Send(pl)
+		end
 	end
 
 	function GM:RoundRestart()
@@ -103,13 +111,14 @@ if SERVER then
 			end)
 			
 			local specialRound = "None"
-			
-			if self.ConVars.SpecialChance:GetInt() >= math.random(1, 100) then
+			local chance = math.random(1, 100)
+			if self.ConVars.SpecialChance:GetInt() >= chance then
 				specialRound = self.SpecialRoundTbl[math.random(#self.SpecialRoundTbl)]
 			end
 
-			if self.SpecialRoundTbl[specialRound] then
+			if specialRound ~= "None" then
 				self:SpecialRoundStart(specialRound)
+				return
 			else
 				local vampire = team.GetPlayers(TEAM_HUMAN)[math.random(team.NumPlayers(TEAM_HUMAN))]
 				vampire:SetTeam(TEAM_VAMPIRE)
@@ -135,7 +144,7 @@ if SERVER then
 		for _, pl in pairs(player.GetAll()) do
 			net.Start("bl_roundstart")
 				net.WriteInt(pl:Team(), 8)
-				net.WriteString(specialRound or "None")
+				net.WriteString("None")
 			net.Send(pl)
 		end
 		

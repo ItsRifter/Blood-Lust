@@ -30,6 +30,8 @@ GM.ConVars = GM.ConVars or {}
 GM.ConVars.PistolMax = CreateConVar("bl_maxpistol", 21, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "How much players can hold pistol ammo", 1)
 GM.ConVars.BuckshotMax = CreateConVar("bl_maxbuckshot", 16, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "How much players can hold shotgun ammo", 1)
 GM.ConVars.RifleMax = CreateConVar("bl_maxrifle", 20, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "How much players can hold rifle ammo", 1)
+GM.ConVars.ResTime = CreateConVar("bl_restime", 9, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "How much time in seconds do the undead resurrect", 1)
+GM.ConVars.TurnTime = CreateConVar("bl_turntime", 12, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "How much time in seconds do humans turn into ghouls", 1)
 --Round Convars
 GM.ConVars.MaxRounds = CreateConVar("bl_maxrounds", 6, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "Rounds until a map change")
 GM.ConVars.TimeLimit = CreateConVar("bl_timelimit", 360, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED, FCVAR_SERVER_CAN_EXECUTE }, "Time before sun rise")

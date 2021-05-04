@@ -11,9 +11,16 @@ local FEMALE_NAMES = {
 }
 
 function GM:PlayerInitialSpawn(ply)
+	if self:GetRoundStatus() == GAME_ACTIVE then
+		ply:SetTeam(TEAM_SPECTATOR) 
+		ply:Spectate(OBS_MODE_IN_EYE)
+	end
 	self:RoundCheck()
 end
 function GM:PlayerSpawn(ply)	
+	if ply:Team() == TEAM_SPECTATOR then
+		ply:Spectate(OBS_MODE_IN_EYE)
+	end
 	ply:StripWeapons()
 	ply:RemoveAllAmmo()
 	ply:SetRunSpeed(300)
@@ -105,7 +112,7 @@ end
 
 function BeginResurrection(ply, body)
 	ply:Lock()
-	timer.Create("bl_resurrect", 8, 1, function()
+	timer.Create("bl_resurrect", GAMEMODE.ConVars.ResTime:GetInt(), 1, function()
 		if GAMEMODE:GetRoundStatus() ~= GAME_ACTIVE then return end
 		if (ply:Team() == TEAM_VAMPIRE or ply:Team() == TEAM_GHOUL) then
 			if string.find(ply:GetModel(), "female") then
@@ -115,7 +122,7 @@ function BeginResurrection(ply, body)
 			end
 			ply:Spawn()
 			ply:UnLock()
-			
+			ply:SetHealth(20)
 			timer.Simple(0.1, function()
 				ply:SetPos(body:GetPos())
 				ply:Give("weapon_bl_fangs")
@@ -127,7 +134,7 @@ end
 
 function BeginTransformation(ply, body)
 	ply:Lock()
-	timer.Create("bl_transform", 8, 1, function()
+	timer.Create("bl_transform", GAMEMODE.ConVars.TurnTime:GetInt(), 1, function()
 		if GAMEMODE:GetRoundStatus() ~= GAME_ACTIVE then return end
 		
 		ply:SetTeam(TEAM_GHOUL)
@@ -213,7 +220,7 @@ function GM:DoPlayerDeath(ply, att, dmgInfo)
 		return
 	end
 	
-	if (ply:Team() == TEAM_HUMAN or ply:Team() == TEAM_HUNTER) and (att:Team() ~= TEAM_VAMPIRE or att:Team() ~= TEAM_GHOUL) then
+	if (ply:Team() == TEAM_HUMAN or ply:Team() == TEAM_HUNTER) and att:IsPlayer() and (att:Team() ~= TEAM_VAMPIRE or att:Team() ~= TEAM_GHOUL) then
 		net.Start("bl_playerdeath")
 		net.Send(ply)
 		
@@ -223,8 +230,16 @@ function GM:DoPlayerDeath(ply, att, dmgInfo)
 			ply:SetNoDraw(true)
 			ply:AllowFlashlight(false)
 		end)
-	
+	elseif not att:IsPlayer() then
+		ply:SetTeam(TEAM_SPECTATOR)
+		timer.Simple(0.1, function()
+			ply:Spectate(OBS_MODE_IN_EYE)
+			ply:SetNoDraw(true)
+			ply:AllowFlashlight(false)
+		end)
 	end
+	
+	
 	self:RoundCheck()
 end
 
@@ -238,7 +253,7 @@ hook.Add("KeyPress", "SpecKey", function(ply, key)
 		if specEnt > #GAMEMODE.ActivePlayers then
 			specEnt = 1
 		end
-		if GAMEMODE.ActivePlayers[specEnt]:Alive() and GAMEMODE.ActivePlayers[specEnt]:Team() ~= TEAM_SPECTATOR then
+		if GAMEMODE.ActivePlayers[specEnt]:Team() ~= TEAM_SPECTATOR then
 			ply:SpectateEntity(GAMEMODE.ActivePlayers[specEnt])
 		else
 			specEnt = specEnt + 1
@@ -248,7 +263,7 @@ hook.Add("KeyPress", "SpecKey", function(ply, key)
 		if specEnt < 1 then
 			specEnt = #GAMEMODE.ActivePlayers
 		end
-		if GAMEMODE.ActivePlayers[specEnt]:Alive() and GAMEMODE.ActivePlayers[specEnt]:Team() ~= TEAM_SPECTATOR then
+		if GAMEMODE.ActivePlayers[specEnt]:Team() ~= TEAM_SPECTATOR then
 			ply:SpectateEntity(GAMEMODE.ActivePlayers[specEnt])
 		else
 			specEnt = specEnt - 1

@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 SWEP.Author = "SuperSponer"
 SWEP.PrintName = "Fangs"
-SWEP.Instructions = "Bite humans\nBEWARE: Will alert humans of your attacks"
+SWEP.Instructions = "Bite humans"
 
 SWEP.UseHands = false
 SWEP.WorldModel = ""
@@ -73,15 +73,20 @@ function SWEP:PrimaryAttack()
 			bullet.Force  = 1
 			bullet.Damage = self.Primary.Damage
 			self.Owner:FireBullets(bullet)
-			self:SetNextPrimaryFire(CurTime() + 1.25)
+			self:SetNextPrimaryFire(CurTime() + 0.85)
+			
 		elseif trace.Entity.blood and trace.Entity.blood >= 1 then
 			pl:EmitSound(biteSound)
+			
+			pl:SetHealth(pl:Health() + 10)
+			
 			if pl:Health() >= pl:GetMaxHealth() then
 				pl:SetHealth(pl:GetMaxHealth())
 			end
+			
 			self:SetNextPrimaryFire(CurTime() + 1.85)
-			pl:SetHealth(pl:Health() + 10)
 			trace.Entity.blood = trace.Entity.blood - 10
+			
 		elseif trace.Entity.blood and trace.Entity.blood < 1 then
 			pl:ChatPrint("This body is dried of blood")
 		end
@@ -95,12 +100,6 @@ end
 
 function SWEP:SecondaryAttack()
 	return
-end
-
-function SWEP:Deploy()
-	if CLIENT then return end
-	
-	self.Owner:EmitSound("bloodlust/vampireattack.wav", 150, 100)
 end
 
 local crosshair = Material("bloodlust/crosshair/crosshair")

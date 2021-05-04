@@ -88,16 +88,13 @@ function SWEP:PrimaryAttack()
 			end
 			
 			trace.Entity.player:SetTeam(TEAM_SPECTATOR)
-			if pl:Team() == TEAM_HUMAN or pl:Team() == TEAM_HUNTER then
-				GAMEMODE:BroadcastMessage(Color(255, 255, 255), pl:Nick() .. " staked you", trace.Entity.player)
-			else
-				GAMEMODE:BroadcastMessage(Color(255, 255, 255), pl:Nick() .. " betrayed you", trace.Entity.player)
-			end
 			if string.find(trace.Entity:GetModel(), "female") then
 				trace.Entity:EmitSound("bloodlust/vampirefemaledeath.wav")
 			else
 				trace.Entity:EmitSound("bloodlust/vampiremaledeath.wav")
 			end
+			trace.Entity.player:UnLock()
+			trace.Entity.player:Spectate(OBS_MODE_IN_EYE)
 			trace.Entity:Ignite(6, 0)
 			GAMEMODE:RoundCheck()
 			timer.Simple(5, function()
@@ -115,7 +112,7 @@ function SWEP:PrimaryAttack()
 		pl:EmitSound(swooshSound)
 	end
 	
-	self:SetNextPrimaryFire(CurTime() + self:SequenceDuration() + 0.5)
+	self:SetNextPrimaryFire(CurTime() + self:SequenceDuration() + 0.2)
 	
 	pl:LagCompensation(false)
 end

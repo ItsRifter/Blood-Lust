@@ -110,21 +110,23 @@ hook.Add("HUDPaint", "BL_HUDPaint", function()
 	local imagePixelSize = 64
 	--local bloodImageBorder = 4
 	
-	if LocalPlayer():Alive() and LocalPlayer():Team() ~= TEAM_SPECTATOR or (LocalPlayer():Team() == TEAM_HUMAN or LocalPlayer():Team() == TEAM_HUNTER) then
-		surface.SetMaterial(humanHealth)
-		surface.DrawTexturedRect(x, y, width, height)
+	if LocalPlayer():Team() ~= TEAM_SPECTATOR then
+		if LocalPlayer():Team() == TEAM_HUMAN or LocalPlayer():Team() == TEAM_HUNTER then
+			surface.SetMaterial(humanHealth)
+			surface.DrawTexturedRect(x, y, width, height)
 
-		local barHeight = math.Remap(curHealth, 0, maxHealth, height * 4 / imagePixelSize, height * 64 / imagePixelSize)
-		surface.SetMaterial(humanBlood)
-		surface.DrawTexturedRectUV(x, y + height - barHeight, width, barHeight, 0, 1-barHeight/height, 1, 1)
-		
-	elseif LocalPlayer():Team() == TEAM_VAMPIRE or LocalPlayer():Team() == TEAM_GHOUL then
-		surface.SetMaterial(vampireHealth)
-		surface.DrawTexturedRect(x, y, width, height)
+			local barHeight = math.Remap(curHealth, 0, maxHealth, height * 4 / imagePixelSize, height * 64 / imagePixelSize)
+			surface.SetMaterial(humanBlood)
+			surface.DrawTexturedRectUV(x, y + height - barHeight, width, barHeight, 0, 1-barHeight/height, 1, 1)
+			
+		elseif LocalPlayer():Team() == TEAM_VAMPIRE or LocalPlayer():Team() == TEAM_GHOUL then
+			surface.SetMaterial(vampireHealth)
+			surface.DrawTexturedRect(x, y, width, height)
 
-		local barHeight = math.Remap(curHealth, 0, maxHealth, height * 4 / imagePixelSize, height * 64 / imagePixelSize)
-		surface.SetMaterial(vampireBlood)
-		surface.DrawTexturedRectUV(x, y + height - barHeight, width, barHeight, 0, 1-barHeight/height, 1, 1)
+			local barHeight = math.Remap(curHealth, 0, maxHealth, height * 4 / imagePixelSize, height * 64 / imagePixelSize)
+			surface.SetMaterial(vampireBlood)
+			surface.DrawTexturedRectUV(x, y + height - barHeight, width, barHeight, 0, 1-barHeight/height, 1, 1)
+		end
 	end
 
 	--AMMO
